@@ -10,10 +10,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 import json
 import os
-from pathlib import Path
-
-# Obtener directorio del script
-SCRIPT_DIR = Path(__file__).parent
 
 # Configuración de página
 st.set_page_config(
@@ -22,6 +18,23 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Obtener directorio del script (compatible con Streamlit Cloud)
+try:
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+except:
+    SCRIPT_DIR = "."
+
+# Verificar que los archivos existen
+DATA_FILE = os.path.join(SCRIPT_DIR, 'Tabla_Completa_Priorizacion_JCO.xlsx')
+GEO_FILE = os.path.join(SCRIPT_DIR, 'upz-bogota-para-shape-con-resultad.xlsx')
+
+if not os.path.exists(DATA_FILE):
+    st.error(f"No se encontró el archivo de datos: {DATA_FILE}")
+    st.stop()
+if not os.path.exists(GEO_FILE):
+    st.error(f"No se encontró el archivo geográfico: {GEO_FILE}")
+    st.stop()
 
 # CSS personalizado para mejor diseño
 st.markdown("""
@@ -61,15 +74,21 @@ st.markdown("""
 # Cargar datos
 @st.cache_data
 def cargar_datos():
-    file_path = SCRIPT_DIR / 'Tabla_Completa_Priorizacion_JCO.xlsx'
-    df = pd.read_excel(file_path)
-    return df
+    try:
+        df = pd.read_excel(DATA_FILE)
+        return df
+    except Exception as e:
+        st.error(f"Error cargando datos: {e}")
+        st.stop()
 
 @st.cache_data
 def cargar_geodatos():
-    file_path = SCRIPT_DIR / 'upz-bogota-para-shape-con-resultad.xlsx'
-    geo = pd.read_excel(file_path)
-    return geo
+    try:
+        geo = pd.read_excel(GEO_FILE)
+        return geo
+    except Exception as e:
+        st.error(f"Error cargando geodatos: {e}")
+        st.stop()
 
 @st.cache_data
 def crear_geojson(geo_df, df_datos):
@@ -122,13 +141,19 @@ LOCALIDADES_MAP = {
     19: 'Ciudad Bolivar', 20: 'Sumapaz'
 }
 
+# Intentar importar shapely (opcional para límites de localidades)
+SHAPELY_AVAILABLE = False
+try:
+    from shapely.geometry import shape
+    from shapely.ops import unary_union
+    SHAPELY_AVAILABLE = True
+except ImportError:
+    pass
+
 @st.cache_data
 def obtener_limites_localidades(geo_df):
     """Obtener los límites y centroides de cada localidad para mostrar en el mapa"""
-    try:
-        from shapely.geometry import shape
-        from shapely.ops import unary_union
-    except ImportError:
+    if not SHAPELY_AVAILABLE:
         return []
 
     localidades_info = []
