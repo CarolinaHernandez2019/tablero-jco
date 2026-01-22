@@ -9,6 +9,11 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import json
+import os
+from pathlib import Path
+
+# Obtener directorio del script
+SCRIPT_DIR = Path(__file__).parent
 
 # Configuración de página
 st.set_page_config(
@@ -56,12 +61,14 @@ st.markdown("""
 # Cargar datos
 @st.cache_data
 def cargar_datos():
-    df = pd.read_excel('Tabla_Completa_Priorizacion_JCO.xlsx')
+    file_path = SCRIPT_DIR / 'Tabla_Completa_Priorizacion_JCO.xlsx'
+    df = pd.read_excel(file_path)
     return df
 
 @st.cache_data
 def cargar_geodatos():
-    geo = pd.read_excel('upz-bogota-para-shape-con-resultad.xlsx')
+    file_path = SCRIPT_DIR / 'upz-bogota-para-shape-con-resultad.xlsx'
+    geo = pd.read_excel(file_path)
     return geo
 
 @st.cache_data
@@ -118,8 +125,11 @@ LOCALIDADES_MAP = {
 @st.cache_data
 def obtener_limites_localidades(geo_df):
     """Obtener los límites y centroides de cada localidad para mostrar en el mapa"""
-    from shapely.geometry import shape
-    from shapely.ops import unary_union
+    try:
+        from shapely.geometry import shape
+        from shapely.ops import unary_union
+    except ImportError:
+        return []
 
     localidades_info = []
     geo_df_copy = geo_df.copy()
