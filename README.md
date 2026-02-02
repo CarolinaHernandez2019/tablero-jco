@@ -3,13 +3,9 @@
 Tablero interactivo para explorar la priorizacion de UPZ de Bogota basado en
 poblacion juvenil vulnerable (Jovenes con Oportunidades - SDIS).
 
-## Version 2.0 - Novedades
-
-- **Ranking dinamico por grupos SISBEN**: Ahora puedes seleccionar que grupos
+- **Ranking dinamico por grupos SISBEN**:Se puede seleccionar que grupos
   incluir en el calculo del ranking (A, B, C, D)
-- **Mapa con geometrias completas**: Usa shapefile oficial de UPZ de Bogota
-- **Comparacion de rankings**: Ve como cambia la priorizacion segun los grupos
-- **Descarga de datos filtrados**: Exporta los resultados a CSV
+- **Descarga de datos filtrados**: Se pueden exportar los resultados a CSV
 
 ## Grupos SISBEN
 
@@ -79,11 +75,7 @@ streamlit run app.py
 
 ## Despliegue en Streamlit Cloud
 
-1. Sube el repositorio a GitHub
-2. Ve a share.streamlit.io
-3. Conecta tu repositorio
-4. Configura: `app.py` como archivo principal
-5. Despliega
+Disponible en: https://tablero-jco-fmeyctbuhogjs5tgttm2iw.streamlit.app/
 
 ---
-Version 2.0 | Enero 2026
+Enero 2026
