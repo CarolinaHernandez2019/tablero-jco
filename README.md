@@ -1,4 +1,4 @@
-# Tablero JCO - Priorizacion Territorial
+# Tablero JCO - Priorizacion territorial
 
 Tablero interactivo para explorar la priorizacion de UPZ de Bogota basado en
 poblacion juvenil vulnerable (Jovenes con Oportunidades - SDIS).
