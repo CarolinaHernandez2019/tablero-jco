@@ -237,7 +237,7 @@ gdf = cargar_shapefile()
 geo_excel = cargar_geodatos_excel()
 
 # Header principal
-st.markdown('<h1 class="main-header">Tablero de Priorizacion JCO</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-header">Tablero de priorizacion con datos del SISBEN</h1>', unsafe_allow_html=True)
 st.markdown('<p class="sub-header">Secretaria Distrital de Integracion Social - SDIS | Datos SISBEN IV</p>', unsafe_allow_html=True)
 
 # ============================================
