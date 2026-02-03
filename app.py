@@ -151,6 +151,22 @@ def calcular_ranking_dinamico(df, grupos_seleccionados):
 
     return df_calc
 
+@st.cache_data
+def crear_limites_localidades(_gdf, df_datos):
+    """Crear GeoJSON con los contornos de localidades, agrupando UPZ por localidad"""
+    try:
+        # Se cruza el shapefile de UPZ con los datos para obtener la localidad de cada UPZ
+        merged = _gdf.merge(
+            df_datos[['CODIGO_UPZ', 'LOCALIDAD']].drop_duplicates(),
+            on='CODIGO_UPZ', how='inner'
+        )
+        # Se disuelven (unen) las geometrias de UPZ que pertenecen a la misma localidad
+        localidades = merged.dissolve(by='LOCALIDAD').reset_index()
+        # Se convierte a GeoJSON para usarlo como capa en el mapa
+        return json.loads(localidades[['LOCALIDAD', 'geometry']].to_json())
+    except Exception:
+        return None
+
 def crear_geojson_desde_shapefile(gdf, df_datos):
     """Crear GeoJSON combinando shapefile con datos"""
     features = []
@@ -222,7 +238,7 @@ geo_excel = cargar_geodatos_excel()
 
 # Header principal
 st.markdown('<h1 class="main-header">Tablero de Priorizacion JCO</h1>', unsafe_allow_html=True)
-st.markdown('<p class="sub-header">Secretaria de Integracion Social | Datos SISBEN IV</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">Secretaria Distrital de Integracion Social - SDIS | Datos SISBEN IV</p>', unsafe_allow_html=True)
 
 # ============================================
 # SIDEBAR - FILTROS DINAMICOS
@@ -406,9 +422,23 @@ with tab1:
         )
 
         fig_map.update_traces(marker_line_width=1, marker_line_color='white')
+
+        # Agregar contornos de localidades como capa sobre el mapa
+        capas_localidades = []
+        if gdf is not None:
+            limites_loc = crear_limites_localidades(gdf, df)
+            if limites_loc:
+                capas_localidades = [{
+                    "source": limites_loc,
+                    "type": "line",
+                    "color": "rgba(0, 0, 0, 0.6)",
+                    "line": {"width": 2}
+                }]
+
         fig_map.update_layout(
             height=650,
             margin=dict(l=0, r=0, t=0, b=0),
+            mapbox=dict(layers=capas_localidades),
             coloraxis_colorbar=dict(
                 title=f"Grupos<br>{'+'.join(grupos_seleccionados)}",
                 tickformat=",",
@@ -520,7 +550,7 @@ st.markdown("---")
 st.markdown("""
 <div style="text-align: center; color: #666; padding: 1rem;">
     <strong>Fuente:</strong> Base de datos SISBEN IV |
-    <strong>Elaborado por:</strong> Subdireccion para la Juventud - Secretaria de Integracion Social<br>
+    <strong>Elaborado por:</strong> Subdireccion para la Juventud - Secretaria Distrital de Integracion Social - SDIS<br>
 
 </div>
 """, unsafe_allow_html=True)
