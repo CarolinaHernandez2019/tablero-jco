@@ -228,6 +228,19 @@ st.markdown('<p class="sub-header">Secretaria de Integracion Social | Datos SISB
 # SIDEBAR - FILTROS DINAMICOS
 # ============================================
 st.sidebar.markdown("### Grupos SISBEN")
+with st.sidebar.expander("Que es el SISBEN?"):
+    st.markdown("""
+El Sistema de Identificacion de Potenciales Beneficiarios
+de Programas Sociales es conocido por su sigla **SISBEN**.
+Existen cuatro grupos de clasificacion: **A, B, C y D**.
+Cada uno ubica a las personas segun su capacidad para
+generar ingresos y sus condiciones de vida:
+
+- **Grupo A**: poblacion con pobreza extrema
+- **Grupo B**: poblacion con pobreza moderada
+- **Grupo C**: poblacion vulnerable
+- **Grupo D**: poblacion no pobre, no vulnerable
+""")
 st.sidebar.markdown("""
 <small>Selecciona los grupos SISBEN a sumar.</small>
 """, unsafe_allow_html=True)
