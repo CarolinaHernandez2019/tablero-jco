@@ -424,15 +424,16 @@ with tab1:
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        st.markdown(f"#### Top 10 UPZ (Grupos {'+'.join(grupos_seleccionados)})")
-        top10 = df_filtrado.head(10)[['RANKING_DINAMICO', 'UPZ', 'LOCALIDAD', 'POB_SELECCIONADA', 'GRUPO_A', 'GRUPO_B', 'GRUPO_C', 'GRUPO_D']]
-        top10.columns = ['Rank', 'UPZ', 'Localidad', 'Poblacion', 'A', 'B', 'C', 'D']
+        st.markdown(f"#### Ranking UPZ (Grupos {'+'.join(grupos_seleccionados)})")
+        tabla_upz = df_filtrado[['RANKING_DINAMICO', 'UPZ', 'LOCALIDAD', 'POB_SELECCIONADA', 'GRUPO_A', 'GRUPO_B', 'GRUPO_C', 'GRUPO_D']].copy()
+        tabla_upz.columns = ['Rank', 'UPZ', 'Localidad', 'Poblacion', 'A', 'B', 'C', 'D']
         st.dataframe(
-            top10.style.format({
+            tabla_upz.style.format({
                 'Poblacion': '{:,.0f}', 'A': '{:,.0f}', 'B': '{:,.0f}', 'C': '{:,.0f}', 'D': '{:,.0f}'
             }).background_gradient(subset=['Poblacion'], cmap='YlOrRd'),
             width='stretch',
-            hide_index=True
+            hide_index=True,
+            height=500
         )
 
     with col2:
