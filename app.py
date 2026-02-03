@@ -521,6 +521,6 @@ st.markdown("""
 <div style="text-align: center; color: #666; padding: 1rem;">
     <strong>Fuente:</strong> Base de datos SISBEN IV |
     <strong>Elaborado por:</strong> Subdireccion para la Juventud - Secretaria de Integracion Social<br>
-    <small>Tablero de exploracion - Jovenes con Oportunidades (JCO) | Version 2.0 con ranking dinamico</small>
+
 </div>
 """, unsafe_allow_html=True)
