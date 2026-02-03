@@ -409,7 +409,7 @@ with tab1:
             )
         )
 
-        st.plotly_chart(fig_map, use_container_width=True)
+        st.plotly_chart(fig_map, width='stretch')
 
     # Panel informativo
     col1, col2 = st.columns([1, 1])
@@ -422,7 +422,7 @@ with tab1:
             top10.style.format({
                 'Poblacion': '{:,.0f}', 'A': '{:,.0f}', 'B': '{:,.0f}', 'C': '{:,.0f}', 'D': '{:,.0f}'
             }).background_gradient(subset=['Poblacion'], cmap='YlOrRd'),
-            use_container_width=True,
+            width='stretch',
             hide_index=True
         )
 
@@ -485,7 +485,7 @@ with tab2:
         )
         fig_loc.update_traces(texttemplate='%{text:,}', textposition='outside')
         fig_loc.update_layout(height=600, yaxis={'categoryorder':'total ascending'}, showlegend=False)
-        st.plotly_chart(fig_loc, use_container_width=True)
+        st.plotly_chart(fig_loc, width='stretch')
 
     with col2:
         tabla_loc = por_loc[['LOCALIDAD', 'UPZ', 'POB_SELECCIONADA', 'JOVENES_TOTAL', 'HOMBRES_SEL', 'MUJERES_SEL']].copy()
@@ -499,7 +499,7 @@ with tab2:
                 'Hombres': '{:,.0f}',
                 'Mujeres': '{:,.0f}'
             }).background_gradient(subset=[f'Grupos {"+".join(grupos_seleccionados)}'], cmap='YlOrRd'),
-            use_container_width=True,
+            width='stretch',
             height=550
         )
 
