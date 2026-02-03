@@ -222,18 +222,14 @@ geo_excel = cargar_geodatos_excel()
 
 # Header principal
 st.markdown('<h1 class="main-header">Tablero de Priorizacion JCO</h1>', unsafe_allow_html=True)
-st.markdown('<p class="sub-header">Jovenes con Oportunidades | Secretaria de Integracion Social | Datos SISBEN IV</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">Secretaria de Integracion Social | Datos SISBEN IV</p>', unsafe_allow_html=True)
 
 # ============================================
 # SIDEBAR - FILTROS DINAMICOS
 # ============================================
-st.sidebar.markdown("## Configuracion de Priorizacion")
-
-# Filtro de grupos SISBEN (NUEVO - PRINCIPAL)
-st.sidebar.markdown("### Grupos SISBEN a incluir")
+st.sidebar.markdown("### Grupos SISBEN")
 st.sidebar.markdown("""
-<small>Selecciona los grupos para calcular el ranking.
-Por defecto A+B+C son vulnerables.</small>
+<small>Selecciona los grupos SISBEN a sumar.</small>
 """, unsafe_allow_html=True)
 
 col_a, col_b = st.sidebar.columns(2)
