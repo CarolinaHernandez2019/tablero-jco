@@ -495,7 +495,7 @@ with tab2:
     st.dataframe(
         tabla_mostrar.style.format({
             'Pob. Selec.': '{:,.0f}', 'A': '{:,.0f}', 'B': '{:,.0f}', 'C': '{:,.0f}', 'D': '{:,.0f}'
-        }).applymap(color_cambio, subset=['Cambio']).background_gradient(subset=['Pob. Selec.'], cmap='YlOrRd'),
+        }).map(color_cambio, subset=['Cambio']).background_gradient(subset=['Pob. Selec.'], cmap='YlOrRd'),
         use_container_width=True,
         height=500
     )
