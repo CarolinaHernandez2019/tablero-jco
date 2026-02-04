@@ -3,7 +3,7 @@
 Tablero JCO - Explorador de Priorizacion Territorial
 Jovenes con Oportunidades - SDIS
 
-Version 2.0 - Con ranking dinamico por grupos SISBEN
+Version 3.0 - Con ranking dinamico por grupos SISBEN + analisis de brechas
 """
 
 import streamlit as st
@@ -32,6 +32,7 @@ except:
 DATA_FILE = os.path.join(SCRIPT_DIR, 'Tabla_Completa_Priorizacion_JCO.xlsx')
 SHAPEFILE_PATH = os.path.join(SCRIPT_DIR, 'UPZ06_22', 'pensionadosupz_0622.shp')
 GEO_EXCEL = os.path.join(SCRIPT_DIR, 'upz-bogota-para-shape-con-resultad.xlsx')
+BRECHAS_FILE = os.path.join(SCRIPT_DIR, 'brechas_por_upz.csv')
 
 # CSS personalizado
 st.markdown("""
@@ -52,11 +53,18 @@ st.markdown("""
         font-size: 1.1rem;
         margin-bottom: 2rem;
     }
+    /* Fondo claro + texto oscuro forzado para que se lea en modo oscuro (celular) */
     .stMetric {
         background-color: #f8f9fa;
         padding: 1rem;
         border-radius: 10px;
         border-left: 4px solid #667eea;
+    }
+    .stMetric label,
+    .stMetric [data-testid="stMetricLabel"],
+    .stMetric [data-testid="stMetricValue"],
+    .stMetric [data-testid="stMetricDelta"] {
+        color: #1a1a2e !important;
     }
     div[data-testid="stMetricValue"] {
         font-size: 1.8rem;
@@ -121,6 +129,16 @@ def cargar_geodatos_excel():
         geo = pd.read_excel(GEO_EXCEL)
         return geo
     except:
+        return None
+
+@st.cache_data
+def cargar_brechas():
+    """Carga los datos pre-calculados de brechas por UPZ (beneficiarios ruta corta vs vulnerables SISBEN)"""
+    try:
+        df = pd.read_csv(BRECHAS_FILE)
+        return df
+    except Exception as e:
+        st.warning(f"No se pudo cargar datos de brechas: {e}")
         return None
 
 def calcular_ranking_dinamico(df, grupos_seleccionados):
@@ -235,6 +253,7 @@ def crear_geojson_desde_excel(geo_df, df_datos):
 df = cargar_datos()
 gdf = cargar_shapefile()
 geo_excel = cargar_geodatos_excel()
+df_brechas = cargar_brechas()
 
 # Header principal
 st.markdown('<h1 class="main-header">Tablero de priorizacion con datos del SISBEN</h1>', unsafe_allow_html=True)
@@ -351,7 +370,7 @@ st.markdown("---")
 # ============================================
 # TABS PRINCIPALES
 # ============================================
-tab1, tab2 = st.tabs(["Mapa Interactivo", "Localidades"])
+tab1, tab2, tab3, tab4 = st.tabs(["Mapa interactivo", "Localidades", "Brechas por UPZ", "Zonas calientes"])
 
 # ============================================
 # TAB 1: MAPA INTERACTIVO
@@ -542,6 +561,350 @@ with tab2:
             width='stretch',
             height=550
         )
+
+# ============================================
+# TAB 3: BRECHAS POR UPZ
+# ============================================
+with tab3:
+    st.markdown("### Analisis de brechas de cobertura")
+    st.markdown("""
+    Compara el total de jovenes vulnerables (SISBEN) contra los beneficiarios
+    de la ruta corta JCO en cada UPZ. La brecha indica cuantos jovenes vulnerables
+    aun no estan siendo atendidos.
+    """)
+
+    if df_brechas is not None:
+        # Recalcular brechas segun grupos seleccionados
+        df_brecha_dinamica = df_brechas.copy()
+
+        # Sumar solo los grupos seleccionados como referencia de vulnerables
+        col_grupos_brecha = [f'GRUPO_{g}' for g in grupos_seleccionados]
+        cols_disponibles_brecha = [c for c in col_grupos_brecha if c in df_brecha_dinamica.columns]
+
+        if cols_disponibles_brecha:
+            df_brecha_dinamica['VULNERABLES_SEL'] = df_brecha_dinamica[cols_disponibles_brecha].sum(axis=1)
+        else:
+            df_brecha_dinamica['VULNERABLES_SEL'] = df_brecha_dinamica['JOVENES_TOTAL']
+
+        # Recalcular cobertura y brecha con los grupos seleccionados
+        df_brecha_dinamica['TASA_COB_DIN'] = (
+            df_brecha_dinamica['BENEFICIARIOS_RUTA_CORTA'] / df_brecha_dinamica['VULNERABLES_SEL'] * 100
+        ).round(1)
+        # Evitar division por cero
+        df_brecha_dinamica.loc[df_brecha_dinamica['VULNERABLES_SEL'] == 0, 'TASA_COB_DIN'] = 0
+
+        df_brecha_dinamica['BRECHA_DIN'] = (
+            df_brecha_dinamica['VULNERABLES_SEL'] - df_brecha_dinamica['BENEFICIARIOS_RUTA_CORTA']
+        )
+
+        # Clasificar prioridad
+        def clasificar(tasa):
+            if tasa >= 100:
+                return 'Cobertura completa'
+            elif tasa >= 75:
+                return 'Baja'
+            elif tasa >= 50:
+                return 'Media'
+            elif tasa >= 25:
+                return 'Alta'
+            else:
+                return 'Critica'
+
+        df_brecha_dinamica['PRIORIDAD'] = df_brecha_dinamica['TASA_COB_DIN'].apply(clasificar)
+
+        # Aplicar filtro de localidad
+        df_brecha_vista = df_brecha_dinamica.copy()
+        if localidad_sel != 'Todas las localidades':
+            df_brecha_vista = df_brecha_vista[df_brecha_vista['LOCALIDAD'] == localidad_sel]
+
+        df_brecha_vista = df_brecha_vista.sort_values('BRECHA_DIN', ascending=False)
+
+        # Metricas de brechas
+        col_b1, col_b2, col_b3, col_b4 = st.columns(4)
+        total_vuln = df_brecha_vista['VULNERABLES_SEL'].sum()
+        total_benef = df_brecha_vista['BENEFICIARIOS_RUTA_CORTA'].sum()
+        total_brecha = df_brecha_vista['BRECHA_DIN'].sum()
+        cobertura_gral = (total_benef / total_vuln * 100) if total_vuln > 0 else 0
+
+        with col_b1:
+            st.metric(f"Vulnerables ({'+'.join(grupos_seleccionados)})", f"{total_vuln:,}")
+        with col_b2:
+            st.metric("Beneficiarios ruta corta", f"{total_benef:,}")
+        with col_b3:
+            st.metric("Cobertura", f"{cobertura_gral:.1f}%")
+        with col_b4:
+            st.metric("Brecha", f"{total_brecha:,}")
+
+        st.markdown("---")
+
+        # Distribucion por prioridad
+        col_p1, col_p2 = st.columns([1, 2])
+
+        with col_p1:
+            st.markdown("#### UPZ por nivel de prioridad")
+            prioridad_conteo = df_brecha_vista['PRIORIDAD'].value_counts()
+            # Colores por prioridad
+            colores_prioridad = {
+                'Critica': '#d73027',
+                'Alta': '#fc8d59',
+                'Media': '#fee08b',
+                'Baja': '#91cf60',
+                'Cobertura completa': '#1a9850'
+            }
+            orden_prioridad = ['Critica', 'Alta', 'Media', 'Baja', 'Cobertura completa']
+            for p in orden_prioridad:
+                if p in prioridad_conteo.index:
+                    color = colores_prioridad[p]
+                    n = prioridad_conteo[p]
+                    st.markdown(
+                        f'<span style="background-color:{color}; color:{"white" if p in ["Critica","Alta"] else "black"}; '
+                        f'padding:0.3rem 0.6rem; border-radius:5px; font-weight:bold;">'
+                        f'{p}: {n} UPZ</span>', unsafe_allow_html=True
+                    )
+                    st.markdown("")
+
+        with col_p2:
+            # Grafico de barras: brecha por UPZ (top 20)
+            top_brechas = df_brecha_vista.head(20)
+            fig_brecha = px.bar(
+                top_brechas,
+                y='UPZ',
+                x='BRECHA_DIN',
+                orientation='h',
+                color='PRIORIDAD',
+                color_discrete_map=colores_prioridad,
+                category_orders={'PRIORIDAD': orden_prioridad},
+                title='Top 20 UPZ con mayor brecha absoluta',
+                text='BRECHA_DIN',
+                hover_data={'LOCALIDAD': True, 'VULNERABLES_SEL': ':,', 'BENEFICIARIOS_RUTA_CORTA': ':,', 'TASA_COB_DIN': True}
+            )
+            fig_brecha.update_traces(texttemplate='%{text:,}', textposition='outside')
+            fig_brecha.update_layout(
+                height=550,
+                yaxis={'categoryorder': 'total ascending'},
+                xaxis_title='Brecha absoluta (jovenes sin atender)',
+                yaxis_title='',
+                legend_title='Prioridad'
+            )
+            st.plotly_chart(fig_brecha, use_container_width=True)
+
+        # Tabla completa de brechas
+        st.markdown("#### Tabla completa de brechas")
+        tabla_brechas = df_brecha_vista[[
+            'UPZ', 'LOCALIDAD', 'VULNERABLES_SEL', 'BENEFICIARIOS_RUTA_CORTA',
+            'TASA_COB_DIN', 'BRECHA_DIN', 'PRIORIDAD'
+        ]].copy()
+        tabla_brechas.columns = [
+            'UPZ', 'Localidad', f'Vulnerables ({"+".join(grupos_seleccionados)})',
+            'Beneficiarios', 'Cobertura %', 'Brecha', 'Prioridad'
+        ]
+
+        # Aplicar colores de prioridad
+        def color_prioridad(val):
+            colores = {
+                'Critica': 'background-color: #d73027; color: white',
+                'Alta': 'background-color: #fc8d59; color: white',
+                'Media': 'background-color: #fee08b; color: black',
+                'Baja': 'background-color: #91cf60; color: black',
+                'Cobertura completa': 'background-color: #1a9850; color: white'
+            }
+            return colores.get(val, '')
+
+        st.dataframe(
+            tabla_brechas.style.format({
+                f'Vulnerables ({"+".join(grupos_seleccionados)})': '{:,.0f}',
+                'Beneficiarios': '{:,.0f}',
+                'Cobertura %': '{:.1f}%',
+                'Brecha': '{:,.0f}'
+            }).map(color_prioridad, subset=['Prioridad']),
+            use_container_width=True,
+            hide_index=True,
+            height=500
+        )
+    else:
+        st.warning("No se encontro el archivo de brechas (brechas_por_upz.csv)")
+
+# ============================================
+# TAB 4: ZONAS CALIENTES
+# ============================================
+with tab4:
+    st.markdown("### Mapa de zonas calientes")
+    st.markdown("""
+    Mapa que combina dos dimensiones: el **color** muestra la brecha absoluta
+    (jovenes vulnerables sin atender) y los **contornos** delimitan las localidades.
+    Las zonas mas oscuras son las que requieren mayor atencion.
+    """)
+
+    if df_brechas is not None and (gdf is not None or geo_excel is not None):
+        # Recalcular con grupos seleccionados (misma logica que tab3)
+        df_calor = df_brechas.copy()
+        col_grupos_calor = [f'GRUPO_{g}' for g in grupos_seleccionados]
+        cols_disp_calor = [c for c in col_grupos_calor if c in df_calor.columns]
+
+        if cols_disp_calor:
+            df_calor['VULNERABLES_SEL'] = df_calor[cols_disp_calor].sum(axis=1)
+        else:
+            df_calor['VULNERABLES_SEL'] = df_calor['JOVENES_TOTAL']
+
+        df_calor['TASA_COB_DIN'] = (
+            df_calor['BENEFICIARIOS_RUTA_CORTA'] / df_calor['VULNERABLES_SEL'] * 100
+        ).round(1)
+        df_calor.loc[df_calor['VULNERABLES_SEL'] == 0, 'TASA_COB_DIN'] = 0
+        df_calor['BRECHA_DIN'] = df_calor['VULNERABLES_SEL'] - df_calor['BENEFICIARIOS_RUTA_CORTA']
+
+        # Filtro de localidad
+        if localidad_sel != 'Todas las localidades':
+            df_calor = df_calor[df_calor['LOCALIDAD'] == localidad_sel]
+
+        # Selector de variable para el mapa
+        variable_mapa = st.radio(
+            "Colorear el mapa por:",
+            ["Brecha absoluta", "Tasa de cobertura (%)"],
+            horizontal=True
+        )
+
+        if variable_mapa == "Brecha absoluta":
+            color_col = 'BRECHA_DIN'
+            color_label = 'Brecha'
+            # Escala de rojos: mas rojo = mayor brecha
+            escala_colores = [
+                [0, '#ffffb2'], [0.2, '#fecc5c'], [0.4, '#fd8d3c'],
+                [0.6, '#f03b20'], [0.8, '#bd0026'], [1, '#67000d']
+            ]
+            rango = [0, df_calor['BRECHA_DIN'].max()]
+        else:
+            color_col = 'TASA_COB_DIN'
+            color_label = 'Cobertura %'
+            # Escala invertida: rojo = baja cobertura, verde = alta cobertura
+            escala_colores = [
+                [0, '#d73027'], [0.25, '#fc8d59'], [0.5, '#fee08b'],
+                [0.75, '#91cf60'], [1, '#1a9850']
+            ]
+            rango = [0, min(100, df_calor['TASA_COB_DIN'].max())]
+
+        # Crear GeoJSON con datos de brechas
+        if gdf is not None:
+            geojson_calor = crear_geojson_desde_shapefile(gdf, df_calor)
+        else:
+            geojson_calor = crear_geojson_desde_excel(geo_excel, df_calor)
+
+        if geojson_calor and len(geojson_calor['features']) > 0:
+            # Preparar datos para mapa
+            map_calor = df_calor[['CODIGO_UPZ', 'UPZ', 'LOCALIDAD', 'VULNERABLES_SEL',
+                                   'BENEFICIARIOS_RUTA_CORTA', 'TASA_COB_DIN', 'BRECHA_DIN']].copy()
+            map_calor['CODIGO_UPZ'] = map_calor['CODIGO_UPZ'].astype(str)
+
+            zoom_calor = 11.5 if localidad_sel != 'Todas las localidades' else 10
+
+            fig_calor = px.choropleth_mapbox(
+                map_calor,
+                geojson=geojson_calor,
+                locations='CODIGO_UPZ',
+                featureidkey="id",
+                color=color_col,
+                color_continuous_scale=escala_colores,
+                range_color=rango,
+                hover_name='UPZ',
+                hover_data={
+                    'CODIGO_UPZ': False,
+                    'LOCALIDAD': True,
+                    'VULNERABLES_SEL': ':,',
+                    'BENEFICIARIOS_RUTA_CORTA': ':,',
+                    'TASA_COB_DIN': True,
+                    'BRECHA_DIN': ':,'
+                },
+                labels={
+                    'VULNERABLES_SEL': f'Vulnerables ({"+".join(grupos_seleccionados)})',
+                    'BENEFICIARIOS_RUTA_CORTA': 'Beneficiarios',
+                    'TASA_COB_DIN': 'Cobertura %',
+                    'BRECHA_DIN': 'Brecha',
+                    'LOCALIDAD': 'Localidad'
+                },
+                mapbox_style="carto-positron",
+                center={"lat": 4.65, "lon": -74.1},
+                zoom=zoom_calor,
+                opacity=0.8
+            )
+
+            fig_calor.update_traces(marker_line_width=1.5, marker_line_color='white')
+
+            # Contornos de localidades
+            capas_loc_calor = []
+            if gdf is not None:
+                limites_calor = crear_limites_localidades(gdf, df)
+                if limites_calor:
+                    capas_loc_calor = [{
+                        "source": limites_calor,
+                        "type": "line",
+                        "color": "rgba(0, 0, 0, 0.7)",
+                        "line": {"width": 2.5}
+                    }]
+
+            fig_calor.update_layout(
+                height=700,
+                margin=dict(l=0, r=0, t=0, b=0),
+                mapbox=dict(layers=capas_loc_calor),
+                coloraxis_colorbar=dict(
+                    title=color_label,
+                    tickformat="," if variable_mapa == "Brecha absoluta" else "",
+                    len=0.7,
+                    thickness=15,
+                    x=0.98
+                )
+            )
+
+            st.plotly_chart(fig_calor, use_container_width=True)
+
+        # Resumen por localidad en zonas calientes
+        st.markdown("#### Brechas agregadas por localidad")
+        loc_calor = df_calor.groupby('LOCALIDAD').agg({
+            'VULNERABLES_SEL': 'sum',
+            'BENEFICIARIOS_RUTA_CORTA': 'sum',
+            'BRECHA_DIN': 'sum'
+        }).reset_index()
+        loc_calor['COBERTURA'] = (loc_calor['BENEFICIARIOS_RUTA_CORTA'] / loc_calor['VULNERABLES_SEL'] * 100).round(1)
+        loc_calor = loc_calor.sort_values('BRECHA_DIN', ascending=False)
+
+        col_z1, col_z2 = st.columns(2)
+
+        with col_z1:
+            fig_loc_brecha = px.bar(
+                loc_calor,
+                y='LOCALIDAD',
+                x='BRECHA_DIN',
+                orientation='h',
+                color='COBERTURA',
+                color_continuous_scale=[[0, '#d73027'], [0.5, '#fee08b'], [1, '#1a9850']],
+                title='Brecha por localidad (color = cobertura %)',
+                text='BRECHA_DIN'
+            )
+            fig_loc_brecha.update_traces(texttemplate='%{text:,}', textposition='outside')
+            fig_loc_brecha.update_layout(
+                height=550,
+                yaxis={'categoryorder': 'total ascending'},
+                xaxis_title='Brecha absoluta',
+                yaxis_title=''
+            )
+            st.plotly_chart(fig_loc_brecha, use_container_width=True)
+
+        with col_z2:
+            loc_calor_tabla = loc_calor.copy()
+            loc_calor_tabla.columns = ['Localidad', f'Vulnerables ({"+".join(grupos_seleccionados)})',
+                                        'Beneficiarios', 'Brecha', 'Cobertura %']
+            st.markdown("#### Resumen por localidad")
+            st.dataframe(
+                loc_calor_tabla.style.format({
+                    f'Vulnerables ({"+".join(grupos_seleccionados)})': '{:,.0f}',
+                    'Beneficiarios': '{:,.0f}',
+                    'Brecha': '{:,.0f}',
+                    'Cobertura %': '{:.1f}%'
+                }).background_gradient(subset=['Brecha'], cmap='YlOrRd'),
+                use_container_width=True,
+                hide_index=True,
+                height=550
+            )
+    else:
+        st.warning("Se necesitan los datos de brechas y geodatos para este mapa")
 
 # ============================================
 # FOOTER
