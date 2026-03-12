@@ -17,20 +17,6 @@ poblacion juvenil vulnerable (Jovenes con Oportunidades - SDIS).
 | D | No Vulnerable | Excluido |
 
 
-## Instalacion local
-
-```bash
-# Crear entorno virtual
-python -m venv venv
-venv\Scripts\activate  # Windows
-source venv/bin/activate  # Linux/Mac
-
-# Instalar dependencias
-pip install -r requirements.txt
-
-# Ejecutar
-streamlit run app.py
-```
 
 ## Uso
 
