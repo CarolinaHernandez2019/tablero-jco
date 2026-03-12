@@ -1,15 +1,15 @@
-# Tablero JCO - Priorizacion territorial
+# Tablero JCO - Priorización territorial
 
-Tablero interactivo para explorar la priorizacion de UPZ de Bogota basado en
-poblacion juvenil vulnerable (Jovenes con Oportunidades - SDIS).
+Tablero interactivo para explorar la priorización de UPZ de Bogotá basado en
+Población juvenil vulnerable (Jóvenes con Oportunidades - SDIS).
 
-- **Ranking dinamico por grupos SISBEN**:Se puede seleccionar que grupos
-  incluir en el calculo del ranking (A, B, C, D)
+- **Ranking dinámico por grupos SISBEN**:Se puede seleccionar que grupos
+  incluir en el cálculo del ranking (A, B, C, D)
 - **Descarga de datos filtrados**: Se pueden exportar los resultados a CSV
 
 ## Grupos SISBEN
 
-| Grupo | Descripcion | Por defecto |
+| Grupo | Descripción | Por defecto |
 |-------|-------------|-------------|
 | A | Pobreza Extrema | Incluido |
 | B | Pobreza Moderada | Incluido |
@@ -21,25 +21,19 @@ poblacion juvenil vulnerable (Jovenes con Oportunidades - SDIS).
 ## Uso
 
 1. **Seleccionar grupos SISBEN**: En la barra lateral, marca/desmarca los grupos
-   que deseas incluir en el ranking
+  a incluir en el ranking
 2. **Filtrar por localidad**: Selecciona una localidad especifica o todas
-3. **Ajustar rango**: Usa el slider para ver solo las UPZ en cierto rango
-4. **Explorar tabs**: Mapa, Ranking, Categorias, Genero, Localidades
+3. **Ajustar rango**: Slider para ver solo las UPZ en cierto rango
+4. **Explorar tabs**: Mapa, Ranking, Categorías, Género, Localidades
 
 ## Ejemplos 
 
 ### Solo poblacion en pobreza extrema (Grupo A)
-- Desmarca B, C, D
-- Marca solo A
-- El ranking mostrara las UPZ con mayor poblacion en pobreza extrema
+- Marcar solo A: mostrará sólo las UPZ con mayor población jóven en pobreza extrema
 
-### Poblacion vulnerable total (A + B + C)
-- Configuracion por defecto
-- Excluye Grupo D (no vulnerable)
-
-### Toda la poblacion juvenil (A + B + C + D)
+### Toda la poblacion joven (A + B + C + D)
 - Marca todos los grupos
-- Muestra ranking por poblacion total
+
 
 
 
