@@ -16,18 +16,6 @@ poblacion juvenil vulnerable (Jovenes con Oportunidades - SDIS).
 | C | Vulnerable | Incluido |
 | D | No Vulnerable | Excluido |
 
-## Estructura de archivos
-
-```
-streamlit_app/
-├── app.py                              # Aplicacion principal
-├── requirements.txt                    # Dependencias
-├── README.md                           # Este archivo
-├── Tabla_Completa_Priorizacion_JCO.xlsx  # Datos de poblacion por UPZ
-├── upz-bogota-para-shape-con-resultad.xlsx  # Geodatos (fallback)
-└── UPZ06_22/                           # Shapefile de UPZ
-    └── pensionadosupz_0622.shp         # Geometrias oficiales
-```
 
 ## Instalacion local
 
@@ -52,7 +40,7 @@ streamlit run app.py
 3. **Ajustar rango**: Usa el slider para ver solo las UPZ en cierto rango
 4. **Explorar tabs**: Mapa, Ranking, Categorias, Genero, Localidades
 
-## Ejemplos de uso
+## Ejemplos 
 
 ### Solo poblacion en pobreza extrema (Grupo A)
 - Desmarca B, C, D
@@ -67,10 +55,6 @@ streamlit run app.py
 - Marca todos los grupos
 - Muestra ranking por poblacion total
 
-## Fuente de datos
 
-- **Poblacion**: Base de datos SISBEN IV
-- **Geometrias**: Datos Abiertos Bogota - UPZ (2022)
-- **Elaborado por**: Subdireccion para la Juventud - SDIS
 
 
