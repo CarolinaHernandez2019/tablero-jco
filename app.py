@@ -14,9 +14,19 @@ import plotly.graph_objects as go
 import json
 import os
 
+
+def fmt_num(n, decimales=0):
+    """Formato colombiano: miles con punto, decimales con coma (1.234,56)"""
+    if pd.isna(n):
+        return ""
+    if decimales == 0:
+        return f"{n:,.0f}".replace(",", ".")
+    s = f"{n:,.{decimales}f}"
+    return s.replace(",", "X").replace(".", ",").replace("X", ".")
+
 # Configuracion de pagina
 st.set_page_config(
-    page_title="Tablero JCO - Priorizacion",
+    page_title="Tablero JCO - Priorización",
     page_icon="🎯",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -40,12 +50,44 @@ st.markdown("""
     .main-header {
         font-size: 2.5rem;
         font-weight: 700;
-        color: #1E3A5F;
+        color: #6B5B9A;
         text-align: center;
         padding: 1rem;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+    }
+    /* Subtitulos institucionales SDIS (contenido principal) */
+    section[data-testid="stMain"] h2,
+    section[data-testid="stMain"] h3,
+    section[data-testid="stMain"] h4 {
+        color: #6B5B9A;
+    }
+
+    /* Sidebar con estilo institucional SDIS */
+    section[data-testid="stSidebar"] {
+        background-color: #2D2D2D !important;
+    }
+    section[data-testid="stSidebar"] *,
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] span,
+    section[data-testid="stSidebar"] small,
+    section[data-testid="stSidebar"] strong,
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3,
+    section[data-testid="stSidebar"] h4 {
+        color: #F5F1E8 !important;
+    }
+    /* Selectbox y controles dentro del sidebar oscuro */
+    section[data-testid="stSidebar"] [data-baseweb="select"] > div,
+    section[data-testid="stSidebar"] [data-baseweb="input"] > div {
+        background-color: #3D3D3D !important;
+        color: #F5F1E8 !important;
+        border-color: #5D5D5D !important;
+    }
+    /* filter-info ajustado al fondo oscuro */
+    section[data-testid="stSidebar"] .filter-info {
+        background-color: #3D3D3D !important;
+        color: #F5F1E8 !important;
     }
     .sub-header {
         text-align: center;
@@ -58,7 +100,6 @@ st.markdown("""
         background-color: #f8f9fa;
         padding: 1rem;
         border-radius: 10px;
-        border-left: 4px solid #667eea;
     }
     .stMetric label,
     .stMetric [data-testid="stMetricLabel"],
@@ -71,8 +112,8 @@ st.markdown("""
         font-weight: 700;
     }
     .filter-info {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
+        background-color: #f8f9fa;
+        color: #1a1a2e;
         padding: 1rem;
         border-radius: 10px;
         margin-bottom: 1rem;
@@ -81,6 +122,46 @@ st.markdown("""
     .grupo-b { background-color: #fc8d59; color: white; padding: 0.2rem 0.5rem; border-radius: 5px; }
     .grupo-c { background-color: #fee08b; color: black; padding: 0.2rem 0.5rem; border-radius: 5px; }
     .grupo-d { background-color: #91cf60; color: black; padding: 0.2rem 0.5rem; border-radius: 5px; }
+
+    /* Notas/alerts con estilo institucional SDIS */
+    div[data-testid="stAlert"],
+    div[data-baseweb="notification"],
+    .stAlert {
+        background-color: #2D2D2D !important;
+        color: #F5F1E8 !important;
+        border: none !important;
+        border-radius: 8px !important;
+    }
+    div[data-testid="stAlert"] *,
+    div[data-baseweb="notification"] *,
+    .stAlert * {
+        color: #F5F1E8 !important;
+    }
+    div[data-testid="stAlert"] svg,
+    div[data-baseweb="notification"] svg {
+        fill: #F5F1E8 !important;
+    }
+
+    /* Override del color primario rojo de Streamlit por morado SDIS */
+    .stTabs [data-baseweb="tab-highlight"] {
+        background-color: #6B5B9A !important;
+    }
+    .stTabs [data-baseweb="tab-border"] {
+        background-color: #E5E5E5 !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #6B5B9A !important;
+    }
+    .stCheckbox [aria-checked="true"],
+    .stCheckbox [data-baseweb="checkbox"] [data-checked="true"] {
+        background-color: #6B5B9A !important;
+        border-color: #6B5B9A !important;
+    }
+    .stSlider [role="slider"],
+    .stSlider [data-baseweb="slider"] [role="slider"] {
+        background-color: #6B5B9A !important;
+    }
+    a, a:visited { color: #6B5B9A !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -256,25 +337,25 @@ geo_excel = cargar_geodatos_excel()
 df_brechas = cargar_brechas()
 
 # Header principal
-st.markdown('<h1 class="main-header">Tablero de priorizacion con datos del SISBEN</h1>', unsafe_allow_html=True)
-st.markdown('<p class="sub-header">Secretaria Distrital de Integracion Social - SDIS | Datos SISBEN IV</p>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-header">Tablero de priorización con datos del SISBEN</h1>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">Secretaría Distrital de Integración Social - SDIS | Datos SISBEN IV</p>', unsafe_allow_html=True)
 
 # ============================================
 # SIDEBAR - FILTROS DINAMICOS
 # ============================================
 st.sidebar.markdown("### Grupos SISBEN")
-with st.sidebar.expander("Que es el SISBEN?"):
+with st.sidebar.expander("¿Qué es el SISBEN?"):
     st.markdown("""
-El Sistema de Identificacion de Potenciales Beneficiarios
+El Sistema de Identificación de Potenciales Beneficiarios
 de Programas Sociales es conocido por su sigla **SISBEN**.
-Existen cuatro grupos de clasificacion: **A, B, C y D**.
-Cada uno ubica a las personas segun su capacidad para
+Existen cuatro grupos de clasificación: **A, B, C y D**.
+Cada uno ubica a las personas según su capacidad para
 generar ingresos y sus condiciones de vida:
 
-- **Grupo A**: poblacion con pobreza extrema
-- **Grupo B**: poblacion con pobreza moderada
-- **Grupo C**: poblacion vulnerable
-- **Grupo D**: poblacion no pobre, no vulnerable
+- **Grupo A**: población con pobreza extrema
+- **Grupo B**: población con pobreza moderada
+- **Grupo C**: población vulnerable
+- **Grupo D**: población no pobre, no vulnerable
 """)
 st.sidebar.markdown("""
 <small>Selecciona los grupos SISBEN a sumar.</small>
@@ -307,7 +388,6 @@ st.sidebar.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-st.sidebar.markdown("---")
 st.sidebar.markdown("### Filtros adicionales")
 
 # Filtro por localidad
@@ -317,26 +397,11 @@ localidad_sel = st.sidebar.selectbox("Localidad", localidades)
 # Calcular ranking dinamico
 df_dinamico = calcular_ranking_dinamico(df, grupos_seleccionados)
 
-# Filtro por rango de ranking
-st.sidebar.markdown("### Rango de Priorizacion")
-ranking_min, ranking_max = st.sidebar.slider(
-    "Seleccionar rango",
-    min_value=1,
-    max_value=len(df_dinamico),
-    value=(1, min(50, len(df_dinamico))),
-    label_visibility="collapsed"
-)
-
 # Aplicar filtros
 df_filtrado = df_dinamico.copy()
 
 if localidad_sel != 'Todas las localidades':
     df_filtrado = df_filtrado[df_filtrado['LOCALIDAD'] == localidad_sel]
-
-df_filtrado = df_filtrado[
-    (df_filtrado['RANKING_DINAMICO'] >= ranking_min) &
-    (df_filtrado['RANKING_DINAMICO'] <= ranking_max)
-]
 
 # Calcular totales
 total_seleccionado = df_filtrado['POB_SELECCIONADA'].sum()
@@ -347,25 +412,23 @@ total_mujeres_sel = df_filtrado['MUJERES_SEL'].sum()
 # ============================================
 # METRICAS PRINCIPALES
 # ============================================
-st.markdown("### Resumen General")
+st.markdown("### Resumen general")
 
 col1, col2, col3, col4, col5, col6 = st.columns(6)
 
 with col1:
-    st.metric("UPZ", len(df_filtrado))
+    st.metric("UPZ", fmt_num(len(df_filtrado)))
 with col2:
-    st.metric("Total Jovenes", f"{total_jovenes:,}")
+    st.metric("Total jóvenes", fmt_num(total_jovenes))
 with col3:
-    st.metric(f"Grupos {'+'.join(grupos_seleccionados)}", f"{total_seleccionado:,}")
+    st.metric(f"Grupos {'+'.join(grupos_seleccionados)}", fmt_num(total_seleccionado))
 with col4:
     pct = (total_seleccionado / total_jovenes * 100) if total_jovenes > 0 else 0
-    st.metric("% Seleccionado", f"{pct:.1f}%")
+    st.metric("% seleccionado", f"{fmt_num(pct, 1)}%")
 with col5:
-    st.metric("Hombres", f"{total_hombres_sel:,}")
+    st.metric("Hombres", fmt_num(total_hombres_sel))
 with col6:
-    st.metric("Mujeres", f"{total_mujeres_sel:,}")
-
-st.markdown("---")
+    st.metric("Mujeres", fmt_num(total_mujeres_sel))
 
 # ============================================
 # TABS PRINCIPALES
@@ -376,18 +439,18 @@ tab1, tab2 = st.tabs(["Mapa interactivo", "Localidades"])
 # TAB 1: MAPA INTERACTIVO
 # ============================================
 with tab1:
-    st.markdown("### Mapa de Priorizacion por UPZ")
-    st.markdown(f"**Coloreado por:** Poblacion de Grupos {'+'.join(grupos_seleccionados)}")
+    st.markdown("### Mapa de priorización por UPZ")
+    st.markdown(f"**Coloreado por:** población de grupos {'+'.join(grupos_seleccionados)}")
 
     # Crear GeoJSON
     if gdf is not None:
         geojson_data = crear_geojson_desde_shapefile(gdf, df_filtrado)
-        st.success("Usando shapefile con geometrias completas")
+        st.success("Usando shapefile con geometrías completas")
     elif geo_excel is not None:
         geojson_data = crear_geojson_desde_excel(geo_excel, df_filtrado)
         st.info("Usando geodatos desde Excel")
     else:
-        st.error("No hay datos geograficos disponibles")
+        st.error("No hay datos geográficos disponibles")
         geojson_data = None
 
     if geojson_data and len(geojson_data['features']) > 0:
@@ -426,7 +489,7 @@ with tab1:
             },
             labels={
                 'POB_SELECCIONADA': f'Grupos {"+".join(grupos_seleccionados)}',
-                'JOVENES_TOTAL': 'Total Jovenes',
+                'JOVENES_TOTAL': 'Total jóvenes',
                 'LOCALIDAD': 'Localidad',
                 'RANKING_DINAMICO': 'Ranking',
                 'GRUPO_A': 'Grupo A',
@@ -473,32 +536,32 @@ with tab1:
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        st.markdown(f"#### Ranking UPZ (Grupos {'+'.join(grupos_seleccionados)})")
+        st.markdown(f"#### Ranking UPZ (grupos {'+'.join(grupos_seleccionados)})")
         tabla_upz = df_filtrado[['RANKING_DINAMICO', 'UPZ', 'LOCALIDAD', 'POB_SELECCIONADA', 'GRUPO_A', 'GRUPO_B', 'GRUPO_C', 'GRUPO_D']].copy()
-        tabla_upz.columns = ['Rank', 'UPZ', 'Localidad', 'Poblacion', 'A', 'B', 'C', 'D']
+        tabla_upz.columns = ['Rank', 'UPZ', 'Localidad', 'Población', 'A', 'B', 'C', 'D']
         st.dataframe(
             tabla_upz.style.format({
-                'Poblacion': '{:,.0f}', 'A': '{:,.0f}', 'B': '{:,.0f}', 'C': '{:,.0f}', 'D': '{:,.0f}'
-            }).background_gradient(subset=['Poblacion'], cmap='YlOrRd'),
+                'Población': fmt_num, 'A': fmt_num, 'B': fmt_num, 'C': fmt_num, 'D': fmt_num
+            }).background_gradient(subset=['Población'], cmap='YlOrRd'),
             width='stretch',
             hide_index=True,
             height=500
         )
 
     with col2:
-        st.markdown("#### Leyenda de Grupos SISBEN")
+        st.markdown("#### Leyenda de grupos SISBEN")
         st.markdown("""
-        | Grupo | Descripcion | Incluido |
+        | Grupo | Descripción | Incluido |
         |-------|------------|----------|
-        | **A** | Pobreza Extrema | {} |
-        | **B** | Pobreza Moderada | {} |
+        | **A** | Pobreza extrema | {} |
+        | **B** | Pobreza moderada | {} |
         | **C** | Vulnerable | {} |
-        | **D** | No Vulnerable | {} |
+        | **D** | No vulnerable | {} |
         """.format(
-            "Si" if 'A' in grupos_seleccionados else "No",
-            "Si" if 'B' in grupos_seleccionados else "No",
-            "Si" if 'C' in grupos_seleccionados else "No",
-            "Si" if 'D' in grupos_seleccionados else "No"
+            "Sí" if 'A' in grupos_seleccionados else "No",
+            "Sí" if 'B' in grupos_seleccionados else "No",
+            "Sí" if 'C' in grupos_seleccionados else "No",
+            "Sí" if 'D' in grupos_seleccionados else "No"
         ))
 
         st.markdown("""
@@ -512,7 +575,7 @@ with tab1:
 # TAB 2: LOCALIDADES
 # ============================================
 with tab2:
-    st.markdown("### Analisis por Localidad")
+    st.markdown("### Análisis por localidad")
     st.markdown(f"**Ranking basado en:** Grupos {'+'.join(grupos_seleccionados)}")
 
     # Agrupar por localidad
@@ -529,48 +592,43 @@ with tab2:
     }).reset_index()
     por_loc = por_loc.sort_values('POB_SELECCIONADA', ascending=False)
 
-    col1, col2 = st.columns(2)
+    fig_loc = px.bar(
+        por_loc,
+        y='LOCALIDAD',
+        x='POB_SELECCIONADA',
+        orientation='h',
+        color='POB_SELECCIONADA',
+        color_continuous_scale='YlOrRd',
+        title=f'Población grupos {"+".join(grupos_seleccionados)} por localidad',
+        text=por_loc['POB_SELECCIONADA'].apply(fmt_num)
+    )
+    fig_loc.update_traces(textposition='outside')
+    fig_loc.update_layout(height=600, yaxis={'categoryorder':'total ascending'}, showlegend=False)
+    st.plotly_chart(fig_loc, width='stretch')
 
-    with col1:
-        fig_loc = px.bar(
-            por_loc,
-            y='LOCALIDAD',
-            x='POB_SELECCIONADA',
-            orientation='h',
-            color='POB_SELECCIONADA',
-            color_continuous_scale='YlOrRd',
-            title=f'Poblacion Grupos {"+".join(grupos_seleccionados)} por Localidad',
-            text='POB_SELECCIONADA'
-        )
-        fig_loc.update_traces(texttemplate='%{text:,}', textposition='outside')
-        fig_loc.update_layout(height=600, yaxis={'categoryorder':'total ascending'}, showlegend=False)
-        st.plotly_chart(fig_loc, width='stretch')
+    tabla_loc = por_loc[['LOCALIDAD', 'UPZ', 'POB_SELECCIONADA', 'JOVENES_TOTAL', 'HOMBRES_SEL', 'MUJERES_SEL']].copy()
+    tabla_loc.columns = ['Localidad', 'UPZ', f'Grupos {"+".join(grupos_seleccionados)}', 'Total', 'Hombres', 'Mujeres']
 
-    with col2:
-        tabla_loc = por_loc[['LOCALIDAD', 'UPZ', 'POB_SELECCIONADA', 'JOVENES_TOTAL', 'HOMBRES_SEL', 'MUJERES_SEL']].copy()
-        tabla_loc.columns = ['Localidad', 'UPZ', f'Grupos {"+".join(grupos_seleccionados)}', 'Total', 'Hombres', 'Mujeres']
-
-        st.markdown("#### Resumen por Localidad")
-        st.dataframe(
-            tabla_loc.style.format({
-                f'Grupos {"+".join(grupos_seleccionados)}': '{:,.0f}',
-                'Total': '{:,.0f}',
-                'Hombres': '{:,.0f}',
-                'Mujeres': '{:,.0f}'
-            }).background_gradient(subset=[f'Grupos {"+".join(grupos_seleccionados)}'], cmap='YlOrRd'),
-            width='stretch',
-            height=550
-        )
+    st.markdown("#### Resumen por localidad")
+    st.dataframe(
+        tabla_loc.style.format({
+            f'Grupos {"+".join(grupos_seleccionados)}': fmt_num,
+            'Total': fmt_num,
+            'Hombres': fmt_num,
+            'Mujeres': fmt_num
+        }).background_gradient(subset=[f'Grupos {"+".join(grupos_seleccionados)}'], cmap='YlOrRd'),
+        width='stretch',
+        height=550
+    )
 
 
 # ============================================
 # FOOTER
 # ============================================
-st.markdown("---")
 st.markdown("""
 <div style="text-align: center; color: #666; padding: 1rem;">
     <strong>Fuente:</strong> Base de datos SISBEN IV |
-    <strong>Elaborado por:</strong> Subdireccion para la Juventud - Secretaria Distrital de Integracion Social - SDIS<br>
+    <strong>Elaborado por:</strong> Subdirección para la Juventud - Secretaría Distrital de Integración Social - SDIS<br>
 
 </div>
 """, unsafe_allow_html=True)
