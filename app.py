@@ -463,7 +463,7 @@ with tab1:
         zoom_level = 11.5 if localidad_sel != 'Todas las localidades' else 10
 
         # Mapa coropletico
-        fig_map = px.choropleth_mapbox(
+        fig_map = px.choropleth_map(
             map_df,
             geojson=geojson_data,
             locations='CODIGO_UPZ',
@@ -497,7 +497,7 @@ with tab1:
                 'GRUPO_C': 'Grupo C',
                 'GRUPO_D': 'Grupo D'
             },
-            mapbox_style="carto-positron",
+            map_style="carto-positron",
             center={"lat": 4.65, "lon": -74.1},
             zoom=zoom_level,
             opacity=0.7
@@ -520,7 +520,7 @@ with tab1:
         fig_map.update_layout(
             height=650,
             margin=dict(l=0, r=0, t=0, b=0),
-            mapbox=dict(layers=capas_localidades),
+            map=dict(layers=capas_localidades),
             coloraxis_colorbar=dict(
                 title=f"Grupos<br>{'+'.join(grupos_seleccionados)}",
                 tickformat=",",
